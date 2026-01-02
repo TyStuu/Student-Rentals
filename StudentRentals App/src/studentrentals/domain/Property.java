@@ -4,6 +4,7 @@ import studentrentals.util.Validate;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class Property {
     private String property_id;
@@ -13,9 +14,11 @@ public class Property {
     private List<Room> rooms = new ArrayList<>();
     private boolean is_active;
 
+    // Constructor
     public Property(String property_id, String address, String description, List<String> house_amenities) {
         Validate.notBlank(property_id, "Property ID");
         Validate.notBlank(address, "Address");
+        
         this.property_id = property_id;
         this.address = address.trim();
         this.description = description.trim();
@@ -47,17 +50,22 @@ public class Property {
         return is_active;
     }
 
-    public void setAddress(String address) {
+    public void setAddress(String address) { // Update address if any changes
         Validate.notBlank(address, "Address");
         this.address = address.trim();
     }
 
-    public void setDescription(String description) {
+    public void setDescription(String description) { // Update description for property
         Validate.notBlank(description, "Description");
         this.description = description.trim();
     }
-    public void setHouseAmenities(List<String> house_amenities) {
+
+    public void setHouseAmenities(List<String> house_amenities) { //Allow changes for adding/removing amenities
         this.house_amenities = house_amenities;
+    }
+
+    public void addRoom(Room room) {
+        this.rooms.add(Objects.requireNonNull(room, "Room cannot be null"));
     }
 
     public void deactivate() {

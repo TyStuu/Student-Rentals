@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import studentrentals.util.Validate;
 import java.util.List;
+import java.util.Objects;
 
 
 public class Room {
@@ -16,10 +17,15 @@ public class Room {
     private LocalDate available_to;
     private boolean is_active;
 
+    // Constructor
     public Room(String room_ID, String property_ID, RoomType room_type, double monthly_rent, List<String> room_amenities, LocalDate available_from, LocalDate available_to) {
         Validate.notBlank(room_ID, "Room ID");
         Validate.notBlank(property_ID, "Property ID");
         Validate.positiveInt((int)monthly_rent, "Monthly Rent");
+        Objects.requireNonNull(room_type, "Room Type cannot be null");
+        Objects.requireNonNull(available_from, "Available From date cannot be null");
+        Objects.requireNonNull(available_to, "Available To date cannot be null");
+        
         this.room_ID = room_ID;
         this.property_ID = property_ID;
         this.room_type = room_type;
@@ -29,4 +35,60 @@ public class Room {
         this.available_to = available_to;
         this.is_active = true;
     }
+
+    public String getRoomID() {
+        return room_ID;
+    }
+
+    public String getPropertyID() {
+        return property_ID;
+    }
+
+    public RoomType getRoomType() {
+        return room_type;
+    }
+
+    public double getMonthlyRent() {
+        return monthly_rent;
+    }
+
+    public List<String> getRoomAmenities() {
+        return room_amenities;
+    }
+
+
+    public LocalDate getAvailableFrom() {
+        return available_from;
+    }
+
+    public LocalDate getAvailableTo() {
+        return available_to;
+    }
+
+
+    public boolean isActive() {
+        return is_active;
+    }
+
+    public void setMonthlyRent(double monthly_rent) { //Allow changes for rent adjustments
+        Validate.positiveInt((int)monthly_rent, "Monthly Rent");
+        this.monthly_rent = monthly_rent;
+    }
+
+    public void setRoomAmenities(List<String> room_amenities) { //Allow changes for adding/removing amenities
+        this.room_amenities = room_amenities;
+    }
+
+    public void setAvailableFrom(LocalDate available_from) { //Allow changes for availability adjustments
+        this.available_from = available_from;
+    }
+
+    public void setAvailableTo(LocalDate available_to) { //^^
+        this.available_to = available_to;
+    }
+
+    public void deactivate() {
+        this.is_active = false;
+    }
+
 }

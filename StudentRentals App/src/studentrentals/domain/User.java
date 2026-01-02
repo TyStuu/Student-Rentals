@@ -9,14 +9,13 @@ public abstract class User {
     private String password_hash;
     private boolean is_active;
 
-    //Create util.validate for not blank ------------------------------------------------------
-
     // Constructor
     protected User(String id, String name, String email, String password_hash){
         Validate.notBlank(id, "User ID");
         Validate.notBlank(name, "Name");
         Validate.notBlank(email, "Email");
         Validate.notBlank(password_hash, "Password");
+        
         this.id = id;
         this.name = name;
         this.email = email;
