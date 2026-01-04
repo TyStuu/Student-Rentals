@@ -36,57 +36,52 @@ public class Room {
         this.is_active = true;
     }
 
+    // Getters
     public String getRoomID() {
         return room_ID;
     }
-
     public String getPropertyID() {
         return property_ID;
     }
-
     public RoomType getRoomType() {
         return room_type;
     }
-
     public double getMonthlyRent() {
         return monthly_rent;
     }
-
     public List<String> getRoomAmenities() {
         return room_amenities;
     }
-
-
     public LocalDate getAvailableFrom() {
         return available_from;
     }
-
     public LocalDate getAvailableTo() {
         return available_to;
     }
-
-
     public boolean isActive() {
         return is_active;
     }
 
+    // Setters / Updaters
     public void setMonthlyRent(double monthly_rent) { //Allow changes for rent adjustments
         Validate.positiveInt((int)monthly_rent, "Monthly Rent");
         this.monthly_rent = monthly_rent;
     }
-
     public void setRoomAmenities(List<String> room_amenities) { //Allow changes for adding/removing amenities
         this.room_amenities = room_amenities;
     }
-
     public void setAvailableFrom(LocalDate available_from) { //Allow changes for availability adjustments
         this.available_from = available_from;
     }
-
     public void setAvailableTo(LocalDate available_to) { //^^
         this.available_to = available_to;
     }
+    public boolean isAvailable(LocalDate beginning, LocalDate end) {
+        return (beginning.isEqual(available_from) || beginning.isAfter(available_from)) &&
+               (end.isEqual(available_to) || end.isBefore(available_to));
+    }
 
+    
     public void deactivate() {
         this.is_active = false;
     }

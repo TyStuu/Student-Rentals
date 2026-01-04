@@ -11,10 +11,10 @@ public final class Student extends User{
         this.student_ID = student_ID;
     }
 
+    // Getters
     public String getUniversity() {
         return university;
     }
-
     public String getStudentID() {
         return student_ID;
     }
