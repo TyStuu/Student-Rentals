@@ -7,7 +7,8 @@ import java.util.List;
 import java.util.Objects;
 
 public class Property {
-    private String property_id;
+    private final String property_id;
+    private final String homeowner_ID;
     private String address;
     private String description;
     private List<String> house_amenities = new ArrayList<>();
@@ -17,11 +18,13 @@ public class Property {
     private int review_total = 0;
 
     // Constructor
-    public Property(String property_id, String address, String description, List<String> house_amenities) {
+    public Property(String property_id, String homeowner_ID, String address, String description, List<String> house_amenities) {
         Validate.notBlank(property_id, "Property ID");
+        Validate.notBlank(homeowner_ID, "Homeowner ID");
         Validate.notBlank(address, "Address");
         
         this.property_id = property_id;
+        this.homeowner_ID = homeowner_ID;
         this.address = address.trim();
         this.description = description.trim();
         this.house_amenities = house_amenities;
@@ -31,6 +34,9 @@ public class Property {
     // Getters
     public String getPropertyId() {
         return property_id;
+    }
+    public String getHomeownerID() {
+        return homeowner_ID;
     }
     public String getAddress() {
         return address;
@@ -80,7 +86,7 @@ public class Property {
         review_count += 1;
     }
 
-    
+
         public void deactivate() {
         this.is_active = false;
     }
