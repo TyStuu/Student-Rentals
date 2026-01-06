@@ -2,6 +2,8 @@ package studentrentals.repository;
 
 import studentrentals.domain.Property;
 import studentrentals.domain.Room;
+import studentrentals.util.IndexUtil;
+
 import java.util.*;
 
 
@@ -49,14 +51,7 @@ public class PropertyRoomRepo {
         }
         property_by_ID.put(p.getPropertyId(), p);
 
-        String ownerID = p.getHomeownerID(); // Index property by owner
-        List<String> owner_properties = property_ID_by_owner.get(ownerID);
-
-        if (owner_properties == null) { // First property for this owner
-            owner_properties = new ArrayList<>();
-            property_ID_by_owner.put(ownerID, owner_properties);
-        }
-        owner_properties.add(p.getPropertyId());
+        IndexUtil.addToIndex(property_ID_by_owner, p.getHomeownerID(), p.getPropertyId());
     }
 
     public void roomIndex (Room room) {

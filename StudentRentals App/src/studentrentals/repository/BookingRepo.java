@@ -1,6 +1,8 @@
 package studentrentals.repository;
 
 import studentrentals.domain.Booking;
+import studentrentals.util.IndexUtil;
+
 import java.util.*;
 
 
@@ -16,27 +18,14 @@ public class BookingRepo {
         Objects.requireNonNull(b);
         String booking_id = b.getBookingID();
 
-        if (booking_by_ID.containsKey(b)){
+        if (booking_by_ID.containsKey(booking_id)){
             throw new IllegalArgumentException("Booking with given ID already exists");
         }
 
         booking_by_ID.put(booking_id, b);
 
-        String student_id = b.getStudentID(); // Index booking by student
-        List<String> student_bookings = booking_IDs_by_student_ID.get(student_id);
-        if (student_bookings == null) { // First booking for this student
-            student_bookings = new ArrayList<>();
-            booking_IDs_by_student_ID.put(student_id, student_bookings);
-        }
-        student_bookings.add(booking_id);
-
-        String homeowner_id = b.getHomeownerID(); // Index booking by homeowner
-        List<String> homeowner_bookings = booking_IDs_by_homeowner_ID.get(homeowner_id);
-        if (homeowner_bookings == null) { // First booking for this homeowner
-            homeowner_bookings = new ArrayList<>();
-            booking_IDs_by_homeowner_ID.put(homeowner_id, homeowner_bookings);
-        }
-        homeowner_bookings.add(booking_id);
+        IndexUtil.addToIndex(booking_IDs_by_homeowner_ID, b.getHomeownerID(), booking_id); // Index booking by homeowner
+        IndexUtil.addToIndex(booking_IDs_by_student_ID, b.getStudentID(), booking_id); // Index booking by student
     }
 
     public Optional<Booking> findBookingByID (String id) {
@@ -45,25 +34,23 @@ public class BookingRepo {
     }
 
     public List<Booking> findBookingByHomeowner (String homeownerID) {
-        List<String> bookingIDs = booking_IDs_by_homeowner_ID.get(homeownerID);
-        if (bookingIDs == null) {
-            return Collections.emptyList();
-        }
-        List<Booking> bookings = new ArrayList<>();
-        for (String bookingID : bookingIDs) {
-            Booking booking = booking_by_ID.get(bookingID);
-            if (booking != null) {
-                bookings.add(booking);
-            }
-        }
-        return bookings;
+        return listBookingsFromIDs(booking_IDs_by_homeowner_ID.get(homeownerID));
     }
 
     public List<Booking> findBookingByStudent (String studentID) {
-        List<String> bookingIDs = booking_IDs_by_student_ID.get(studentID);
+        return listBookingsFromIDs(booking_IDs_by_student_ID.get(studentID));
+    }
+
+    public Collection<Booking> getAllBookings() {
+        Collection<Booking> all_bookings = Collections.unmodifiableCollection(booking_by_ID.values());
+        return all_bookings;
+    }
+
+    private List<Booking> listBookingsFromIDs (List<String> bookingIDs) {
         if (bookingIDs == null) {
             return Collections.emptyList();
         }
+
         List<Booking> bookings = new ArrayList<>();
         for (String bookingID : bookingIDs) {
             Booking booking = booking_by_ID.get(bookingID);
@@ -74,7 +61,6 @@ public class BookingRepo {
         return bookings;
     }
 
-    
 
 
 }
