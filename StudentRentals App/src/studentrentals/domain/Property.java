@@ -87,7 +87,7 @@ public class Property {
     }
 
 
-        public void deactivate() {
+    public void deactivate() {
         this.is_active = false;
     }
 }

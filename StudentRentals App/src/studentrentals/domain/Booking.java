@@ -19,6 +19,7 @@ public class Booking {
     private Instant recent_update;
     private Instant expiry;
 
+    // Constructor
     public Booking(String booking_ID, String room_ID, String student_ID, String property_ID, String homeowner_ID,
                    LocalDate booking_start_date, LocalDate booking_end_date, Instant expiry) {
         this.booking_ID = booking_ID;
