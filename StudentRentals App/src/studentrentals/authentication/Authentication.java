@@ -15,7 +15,7 @@ import studentrentals.util.Validate;
 public final class Authentication {
     private final UserRepo userRepo;
 
-    public Authentication(UserRepo userRepo, String adminCreationPassword) {
+    public Authentication(UserRepo userRepo) {
         this.userRepo = userRepo;
     }
 

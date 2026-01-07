@@ -20,6 +20,7 @@ public final class CLIapp {
     private final Authentication auth;
 
     private final Scanner scanner = new Scanner(System.in);
+    private final Session session = new Session();
 
     public CLIapp(UserRepo user_repo, PropertyRoomRepo property_room_repo, BookingRepo booking_repo, Authentication auth) {
         this.user_repo = user_repo;
@@ -30,7 +31,16 @@ public final class CLIapp {
 
     public void run() {
         while (true) {
-            System.out.println("Welcome to the Student Rentals Management App");
+            if (session.isLoggedIn()) {
+                loggedIn();
+            } else {
+                authenticationMenu();
+            }
+        }
+    }
+
+    private void authenticationMenu() {
+        System.out.println("Welcome to the Student Rentals Management App");
             System.out.println("1) Login");
             System.out.println("2) Register");
             System.out.println("0) Exit");
@@ -54,8 +64,9 @@ public final class CLIapp {
             catch (Exception e){
                 System.out.println("Error: " + e.getMessage());
             }
-        }
     }
+
+    // Login and Registration
 
     private void loginMenu() {
         System.out.println("Please log in to continue.");
@@ -67,7 +78,7 @@ public final class CLIapp {
         try{
             User user = auth.loginAndAuth(email, password);
             System.out.println("Login successful. Welcome, " + user.getName());
-            // Proceed to user-specific menu;
+            session.loginSetCurrentUser(user);
         }
         catch (Exception e){
             System.out.println("Login failed: " + e.getMessage());
@@ -75,18 +86,22 @@ public final class CLIapp {
     }
 
     private void registerMenu() {
+        System.out.println("\n -------- Registration --------");
         System.out.println("Please select what type of account to register:");
         System.out.println("1) Student");
         System.out.println("2) Homeowner");
         System.out.print("Choice: ");
         String choice = scanner.nextLine().trim();
 
-        System.out.println("Name: ");
+        System.out.println("Enter new account Name: ");
         String name = scanner.nextLine().trim();
-        System.out.println("Email: ");
+        Validate.validateName(name);
+        System.out.println("Enter new account Email: ");
         String email = scanner.nextLine().trim();
-        System.out.println("Password: ");
+        Validate.validateEmail(email);
+        System.out.println("Enter new account Password: ");
         String password = scanner.nextLine().trim();
+        Validate.validatePassword(password);
 
         switch (choice) {
             case "1":
@@ -96,55 +111,18 @@ public final class CLIapp {
                 String student_ID = scanner.nextLine().trim();
 
                 Student student = auth.registerStudent( IDManage.generateUserID(), name, email, password, university, student_ID);
-                System.out.println("Student registration successful. Welcome, " + student.getName());
+                System.out.println("Student registration successful. Please log in again to continue, " + student.getName());
                 break;
 
             case "2":
                 Homeowner homeowner = auth.registerHomeowner(name, email, password);
-                System.out.println("Homeowner registration successful. Welcome, " + homeowner.getName());
+                System.out.println("Homeowner registration successful. Please log in again to continue, " + homeowner.getName());
         }
     }
 
-
-    private void homeownerMenu(User homeowner) {
-        System.out.println("\n -------- Homeowner Menu --------");
-                System.out.println("Welcome, " + homeowner.getName() + " (Homeowner)");
-
-        System.out.println("1) View user profile.");
-        System.out.println("2) Edit user profile.");
-        //create property, add rooms, dashboard, manage bookings.
-        String choice = scanner.nextLine().trim();
-
-    }
-
-    private void studentMenu(User student) {
-        
-        System.out.println("\\n -------- Student Menu --------");
-        System.out.println("Welcome, " + student.getName() + " (Student)");
-
-        System.out.println("1) View user profile.");
-        System.out.println("2) Edit user profile.");
-        //search booking reviews
-        // messages (notification?)
-        System.out.println("0) Logout. ");
-
-        String choice = scanner.nextLine().trim();
-
-    }
-
-    private void adminMenu(User admin) {
-        System.out.println("\\n -------- Admin Menu --------");
-
-        System.out.println("Welcome, " + admin.getName() + " (Admin)");
-
-        // Admin view data, deativate users, deactivate rooms/properties
-        System.out.println("0) Logout. ");
-
-        String choice = scanner.nextLine().trim();
-    }
-
+    // Logged in routing
     private void loggedIn() {
-        User user = //find current user using session
+        User user = session.getCurrentUser();
 
         if (user instanceof Student student) {
             studentMenu(student);
@@ -157,27 +135,129 @@ public final class CLIapp {
         }
         else {
             System.out.println("Unknown user type.");
-            //logout
+            session.logoutClearCurrentUser();
         }
     }
+
+    // Useer type specific menus
+    private void homeownerMenu(User homeowner) {
+        System.out.println("\n -------- Homeowner Menu --------");
+                System.out.println("Welcome, " + homeowner.getName() + " (Homeowner)");
+
+        System.out.println("1) View user profile.");
+        System.out.println("2) Edit user profile.");
+        //create property, add rooms, dashboard, manage bookings.
+        String choice = scanner.nextLine().trim();
+
+        try {
+            switch (choice) {
+                case "1":
+                    viewProfile(homeowner);
+                    break;
+                case "2":
+                    editProfile(homeowner);
+                    break;
+                case "0":
+                    System.out.println("Logging out.");
+                    session.logoutClearCurrentUser();
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+            }
+        }
+        catch (Exception e){
+            System.out.println("Error: " + e.getMessage());
+        }
+
+    }
+
+    private void studentMenu(User student) {
+        
+        System.out.println("\n -------- Student Menu --------");
+        System.out.println("Welcome, " + student.getName() + " (Student)");
+
+        System.out.println("1) View user profile.");
+        System.out.println("2) Edit user profile.");
+        //search booking reviews
+        // messages (notification?)
+        System.out.println("0) Logout. ");
+
+        String choice = scanner.nextLine().trim();
+
+        try {
+            switch (choice) {
+                case "1":
+                    viewProfile(student);
+                    break;
+                case "2":
+                    editProfile(student);
+                    break;
+                case "0":
+                    System.out.println("Logging out.");
+                    session.logoutClearCurrentUser();
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+            }
+        }
+        catch (Exception e){
+            System.out.println("Error: " + e.getMessage());
+        }
+
+    }
+
+    private void adminMenu(User admin) {
+        System.out.println("\n -------- Admin Menu --------");
+
+        System.out.println("Welcome, " + admin.getName() + " (Admin)");
+
+        // Admin view data, deativate users, deactivate rooms/properties
+        System.out.println("0) Logout. ");
+
+        String choice = scanner.nextLine().trim();
+
+        try { 
+            switch (choice) {
+                case "0":
+                    System.out.println("Logging out.");
+                    session.logoutClearCurrentUser();
+                    break;
+                default:
+                    System.out.println("Invalid choice. Please try again.");
+                    break;
+            }
+        }
+        catch (Exception e){
+            System.out.println("Error: " + e.getMessage());
+        }
+    }
+
 
     private void viewProfile(User user) {
         System.out.println("---- User Profile ----");
         System.out.println("Name: " + user.getName());
         System.out.println("Email: " + user.getEmail());
         System.out.println("Account Active: " + user.isActive());
+        System.out.println("----------------------");
+        System.out.println("Press Enter to continue...");
+        scanner.nextLine();
     }
 
     private void editProfile(User user) {
         System.out.println("---- Edit Profile ----");
+        System.out.print("Enter new name (leave blank to keep current): ");
         String new_name = scanner.nextLine().trim();
-        user.updateProfileName(new_name);
+        if (!new_name.isEmpty()) {
+            Validate.validateName(new_name);
+            user.updateProfileName(new_name);
+        }
+        System.out.println("Enter new password (Leave blank to keep current): ");
+        String new_password = scanner.nextLine().trim();
+        if (!new_password.isEmpty()) {
+            Validate.validatePassword(new_password);
+            String hashed_password = Passwords.hashPassword(new_password);
+            user.updatePasswordHash(hashed_password);
+        }
         System.out.println("Profile updated successfully.");
     }
-
-
-
-
-
-
 }
