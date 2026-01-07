@@ -8,6 +8,10 @@ import studentrentals.util.IDManage;
 import studentrentals.util.IndexUtil;
 import java.util.Scanner;
 import java.util.jar.Attributes.Name;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Optional;
+import java.time.LocalDate;
 
 import studentrentals.authentication.Authentication;
 
@@ -66,7 +70,7 @@ public final class CLIapp {
             }
     }
 
-    // Login and Registration
+// Login and Registration
 
     private void loginMenu() {
         System.out.println("Please log in to continue.");
@@ -120,7 +124,7 @@ public final class CLIapp {
         }
     }
 
-    // Logged in routing
+// Logged in routing
     private void loggedIn() {
         User user = session.getCurrentUser();
 
@@ -139,14 +143,16 @@ public final class CLIapp {
         }
     }
 
-    // Useer type specific menus
+// Useer type specific menus
     private void homeownerMenu(User homeowner) {
         System.out.println("\n -------- Homeowner Menu --------");
                 System.out.println("Welcome, " + homeowner.getName() + " (Homeowner)");
 
         System.out.println("1) View user profile.");
         System.out.println("2) Edit user profile.");
-        //create property, add rooms, dashboard, manage bookings.
+        System.out.println("3) Create a Property listing.");
+        System.out.println("4) Add a Room to a Property.");
+        System.out.println("5) View Dashboard.");
         String choice = scanner.nextLine().trim();
 
         try {
@@ -157,6 +163,17 @@ public final class CLIapp {
                 case "2":
                     editProfile(homeowner);
                     break;
+
+                case "3":
+                    createPropertyMenu(homeowner);
+                    break;
+                case "4":
+                    //add room
+                    break;
+                case "5":
+                    //view dashboard
+                    break;  
+
                 case "0":
                     System.out.println("Logging out.");
                     session.logoutClearCurrentUser();
@@ -179,7 +196,6 @@ public final class CLIapp {
         System.out.println("1) View user profile.");
         System.out.println("2) Edit user profile.");
         //search booking reviews
-        // messages (notification?)
         System.out.println("0) Logout. ");
 
         String choice = scanner.nextLine().trim();
@@ -232,9 +248,107 @@ public final class CLIapp {
         }
     }
 
+//Properrty/Room/Booking Management Menus
+    private void createPropertyMenu(User homeowner) {
+        System.out.println("\n ---- Create Property ----");
+        System.out.println("Enter property address (address also used as title):");
+        String address = scanner.nextLine().trim();
+        Validate.notBlank(address, "Address");
 
+        System.out.println("Enter property description:");
+        String description = scanner.nextLine().trim();
+        Validate.notBlank(description, "Description");
+
+        System.out.println("Enter property amenities (comma separated or blank):");
+        String amenities_input = scanner.nextLine().trim();
+        List<String> amenities = new ArrayList<>();
+        if (!amenities_input.isEmpty()){
+            String[] amenities_array = amenities_input.split(","); //split amenities by comma
+            for (String amenity : amenities_array){
+                amenities.add(amenity.trim());
+            }
+        }
+
+        Property property = new Property(IDManage.generatePropertyID(), homeowner.getId(), address, description, amenities);
+        property_room_repo.saveProperty(property);
+
+        System.out.println("Property created successfully with ID: " + property.getPropertyId());
+        System.out.println("Press Enter to continue...");
+        scanner.nextLine();
+    }
+
+    private void addRoomMenu(User homeowner){
+        System.out.println("\n ---- Add Room to Property ----");
+
+        List<Property> properties = property_room_repo.findPropertyByOwnerID(homeowner.getId());
+        if (properties.isEmpty()) {
+            System.out.println("No properties found. Please create a property first.");
+            System.out.println("Press Enter to continue...");
+            scanner.nextLine();
+            return;
+        }
+
+        System.out.println("Select a property to add a room to:");
+        for (int i = 0; i < properties.size(); i++){ //List all propertiues owned by homeowner
+            System.out.println("   " + (i +1) + ") "+ properties.get(i).getAddress()+ " (ID: "+ properties.get(i).getPropertyId()+ ")");
+        }
+        System.out.println("Choice: ");
+        String choice = scanner.nextLine().trim();
+        Validate.notBlank(choice, "Enter valid property ID");
+
+        Optional<Property> selected_property_opttional = property_room_repo.findPropertyByID(choice);
+        if (selected_property_opttional.isEmpty()) {
+            System.out.println("Property not found. Please try again.");
+            System.out.println("Press Enter to continue...");
+            scanner.nextLine();
+            return;
+        }
+
+        Property selected_property = selected_property_opttional.get();
+
+        System.out.println("Enter Room Type (e.g., SINGLE, DOUBLE, STUDIO): ");
+        System.out.println("Room Type: ");
+        String room_type_input = scanner.nextLine().trim();
+        RoomType room_type = RoomType.valueOf(room_type_input);
+
+        System.out.println("Enter Monthly Rent: ");
+        String rent_input = scanner.nextLine().trim();
+        double monthly_rent = Double.parseDouble(rent_input);
+        Validate.positiveDecimal(monthly_rent, "Monthly Rent");
+
+        System.out.println("Enter Room Amenities (comma separated or blank): ");
+        String amenities_input = scanner.nextLine().trim();
+        List<String> room_amenities = new ArrayList<>();
+        if (!amenities_input.isEmpty()){
+            String[] amenities_array = amenities_input.split(","); //split amenities by comma
+            for (String amenity : amenities_array){
+                room_amenities.add(amenity.trim());
+            }
+        }
+
+        System.out.println("Enter Available From date (YYYY-MM-DD): ");
+        String from_date_input = scanner.nextLine().trim();
+        LocalDate available_from = LocalDate.parse(from_date_input);
+
+        System.out.println("Enter Available To date (YYYY-MM-DD): ");
+        String to_date_input = scanner.nextLine().trim();
+        LocalDate available_to = LocalDate.parse(to_date_input);
+
+        Validate.validateDateOrder(available_from, available_to, "Available From", "Available To");
+
+        Room room = new Room(IDManage.generateRoomID(), selected_property.getPropertyId(), room_type, monthly_rent, room_amenities, available_from, available_to); //Create new room and add it to corersponding property
+        property_room_repo.addRoomToProperty(room);
+
+        System.out.println("Room added successfully with ID: " + room.getRoomID()+ " to Property ID: " + selected_property.getPropertyId());
+        System.out.println("Press Enter to continue...");
+        scanner.nextLine();
+    }
+
+
+
+// Menus for all user types.
     private void viewProfile(User user) {
-        System.out.println("---- User Profile ----");
+        System.out.println("\n ---- User Profile ----");
         System.out.println("Name: " + user.getName());
         System.out.println("Email: " + user.getEmail());
         System.out.println("Account Active: " + user.isActive());
@@ -244,7 +358,7 @@ public final class CLIapp {
     }
 
     private void editProfile(User user) {
-        System.out.println("---- Edit Profile ----");
+        System.out.println("\n ---- Edit Profile ----");
         System.out.print("Enter new name (leave blank to keep current): ");
         String new_name = scanner.nextLine().trim();
         if (!new_name.isEmpty()) {

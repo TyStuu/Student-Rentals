@@ -14,14 +14,11 @@ public class PropertyRoomRepo {
     private final Map<String, Room> room_by_ID = new HashMap<>();
     private final Map<String, List<String>> property_ID_by_owner = new HashMap<>();
 
+
+    // Methods for Property
     public Optional<Property> findPropertyByID(String id) {
         Optional<Property> property = Optional.ofNullable(property_by_ID.get(id));
         return property;
-    }
-
-    public Optional<Room> findRoomByID(String id) {
-        Optional<Room> room = Optional.ofNullable(room_by_ID.get(id));
-        return room;
     }
 
     public List<Property> findPropertyByOwnerID (String ownnerID) {
@@ -54,6 +51,24 @@ public class PropertyRoomRepo {
         IndexUtil.addToIndex(property_ID_by_owner, p.getHomeownerID(), p.getPropertyId()); // Index property by homeowner
     }
 
+
+    // Methods for Rooms
+    public Optional<Room> findRoomByID(String id) {
+        Optional<Room> room = Optional.ofNullable(room_by_ID.get(id));
+        return room;
+    }
+
+    public void addRoomToProperty(Room room) {
+        Objects.requireNonNull(room);
+        Property property = property_by_ID.get(room.getPropertyID());
+        if (property == null) {
+            throw new IllegalArgumentException("Property not found for this room");
+        }
+
+        roomIndex(room);
+        property.addRoom(room);
+    }
+
     public void roomIndex (Room room) {
         Objects.requireNonNull(room);
         if (room_by_ID.containsKey(room.getRoomID())) {
@@ -61,4 +76,6 @@ public class PropertyRoomRepo {
         }
         room_by_ID.put(room.getRoomID(), room);
     }
+
+
 }
