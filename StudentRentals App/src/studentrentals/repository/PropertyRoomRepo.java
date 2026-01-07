@@ -51,7 +51,7 @@ public class PropertyRoomRepo {
         }
         property_by_ID.put(p.getPropertyId(), p);
 
-        IndexUtil.addToIndex(property_ID_by_owner, p.getHomeownerID(), p.getPropertyId());
+        IndexUtil.addToIndex(property_ID_by_owner, p.getHomeownerID(), p.getPropertyId()); // Index property by homeowner
     }
 
     public void roomIndex (Room room) {
