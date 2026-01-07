@@ -1,8 +1,13 @@
 package studentrentals.util;
 
+import java.time.LocalDate;
+import java.util.Objects;
+
 public final class Validate {
     private Validate(){}
 
+
+    // Basic Validators
     public static void notBlank(String value, String fieldName){ // Validate that a string is not null or blank
         if(value == null || value.trim().isEmpty()){
             throw new IllegalArgumentException(fieldName + " cannot be blank");
@@ -15,6 +20,21 @@ public final class Validate {
         }
     }
 
+    public static void positiveDecimal(double value, String fieldName){ // Validate that a decimal number is positive
+        if(value <= 0){
+            throw new IllegalArgumentException(fieldName + " must be a positive decimal number");
+        }
+    }
+
+    public static void validateDateOrder( LocalDate startDate, LocalDate endDate, String startFieldName, String endFieldName) { // Validate that start date is before end date
+        Objects.requireNonNull(startDate, startFieldName + " cannot be null");
+        Objects.requireNonNull(endDate, endFieldName + " cannot be null");
+        if (startDate.isAfter(endDate)) {
+            throw new IllegalArgumentException(startFieldName + " must be before " + endFieldName);
+        }
+    }
+
+    // Format Validators
     public static void validatePassword(String password) { // Validate that password meets minimum complexity
         if (password == null || password.length() < 8) {
             throw new IllegalArgumentException("Password must be at least 8 characters long");
@@ -45,6 +65,8 @@ public final class Validate {
             throw new IllegalArgumentException("Invalid email format");
         }
     }
+
+
 
 
 }

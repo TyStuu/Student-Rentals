@@ -21,7 +21,7 @@ public class Room {
     public Room(String room_ID, String property_ID, RoomType room_type, double monthly_rent, List<String> room_amenities, LocalDate available_from, LocalDate available_to) {
         Validate.notBlank(room_ID, "Room ID");
         Validate.notBlank(property_ID, "Property ID");
-        Validate.positiveInt((int)monthly_rent, "Monthly Rent");
+        Validate.positiveDecimal(monthly_rent, "Monthly Rent");
         Objects.requireNonNull(room_type, "Room Type cannot be null");
         Objects.requireNonNull(available_from, "Available From date cannot be null");
         Objects.requireNonNull(available_to, "Available To date cannot be null");
@@ -64,7 +64,7 @@ public class Room {
 
     // Setters / Updaters
     public void setMonthlyRent(double monthly_rent) { //Allow changes for rent adjustments
-        Validate.positiveInt((int)monthly_rent, "Monthly Rent");
+        Validate.positiveDecimal(monthly_rent, "Monthly Rent");
         this.monthly_rent = monthly_rent;
     }
     public void setRoomAmenities(List<String> room_amenities) { //Allow changes for adding/removing amenities
@@ -81,7 +81,7 @@ public class Room {
                (end.isEqual(available_to) || end.isBefore(available_to));
     }
 
-    
+
     public void deactivate() {
         this.is_active = false;
     }

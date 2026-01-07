@@ -22,6 +22,7 @@ public class Property {
         Validate.notBlank(property_id, "Property ID");
         Validate.notBlank(homeowner_ID, "Homeowner ID");
         Validate.notBlank(address, "Address");
+        Validate.notBlank(description, "Description");
         
         this.property_id = property_id;
         this.homeowner_ID = homeowner_ID;

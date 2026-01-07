@@ -4,7 +4,7 @@ public class Passwords {
     private Passwords(){}
 
     public static String hashPassword(String password){ // Fowler-Noll-Vo-1a hash function for password hashing
-        Validate.notBlank(password, password);
+        Validate.notBlank(password, "Password");
 
         long hash = 0xcbf29ce484222325L; // FNV-1a offset (Hex)
 
