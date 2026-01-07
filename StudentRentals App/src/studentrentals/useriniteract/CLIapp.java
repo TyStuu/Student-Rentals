@@ -12,7 +12,9 @@ import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.Optional;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.Instant;
 
 import studentrentals.authentication.Authentication;
 
@@ -61,6 +63,7 @@ public final class CLIapp {
                     break;
                 case "0":
                     System.out.println("Exiting the application.");
+                    System.exit(0);
                     return;
                 default:
                     System.out.println("Invalid choice. Please try again.");
@@ -153,6 +156,9 @@ public final class CLIapp {
         System.out.println("3) Create a Property listing.");
         System.out.println("4) Add a Room to a Property.");
         System.out.println("5) View Dashboard.");
+        System.out.println("6) View my bookings");
+        System.out.println("7) Cancel a booking.");
+        System.out.println( "8) Approve / Decline a booking request.");
         System.out.println("0) Logout. ");
         String choice = scanner.nextLine().trim();
 
@@ -174,6 +180,16 @@ public final class CLIapp {
                 case "5":
                     dashboardMenu(homeowner);
                     break;  
+                case "6":
+                    viewBookingHistory(homeowner);
+                    break;
+                case "7":
+                    cancelBookingMenu(homeowner);
+                    break;
+                case "8":
+                    approveDeclineBookingMenu(homeowner);
+                    break;
+
 
                 case "0":
                     System.out.println("Logging out.");
@@ -197,6 +213,9 @@ public final class CLIapp {
         System.out.println("1) View user profile.");
         System.out.println("2) Edit user profile.");
         System.out.println("3) Search Rooms.");
+        System.out.println("4) Create a booking request.");
+        System.out.println("5) View my bookings.");
+        System.out.println("6) Cancel a booking.");
         // booking reviews
         System.out.println("0) Logout. ");
 
@@ -212,6 +231,15 @@ public final class CLIapp {
                     break;
                 case "3":
                     studentSearchRoomsMenu((Student) student);
+                    break;
+                case "4":
+                    studentCreateBookingMenu((Student) student);
+                    break;
+                case "5":
+                    viewBookingHistory(student);
+                    break;
+                case "6":
+                    cancelBookingMenu((Student) student);
                     break;
                 case "0":
                     System.out.println("Logging out.");
@@ -425,19 +453,13 @@ public final class CLIapp {
         //Base linear search
         List<RoomSearch> results = property_room_repo.linearRoomSearch(keyword);
         if (results.isEmpty()) {
-            System.out.println("No rooms found matching your criteria.");
-            System.out.println("Press Enter to continue...");
-            scanner.nextLine();
-            return;
+            throw new IllegalArgumentException("No rooms found matching your criteria.");
         }
 
         //Apply filters
         results = applySearchFilters(results);
         if (results.isEmpty()) {
-            System.out.println("No rooms found matching your criteria after applying filters.");
-            System.out.println("Press Enter to continue...");
-            scanner.nextLine();
-            return;
+            throw new IllegalArgumentException("No rooms found matching your criteria after applying filters.");
         }
 
         //sort results
@@ -602,6 +624,188 @@ public final class CLIapp {
             System.out.println("Available To: "+ room.getAvailableTo());
             System.out.println("----------------------");
         }
+    }
+
+//Booking functions
+    private void studentCreateBookingMenu(Student student) {
+        System.out.println("\n ---- Create Booking Request ----");
+        System.out.println("Enter Room ID to book: ");
+        String room_id = scanner.nextLine().trim();
+        Validate.notBlank(room_id, "Room ID");
+
+        Optional<Room> room = property_room_repo.findRoomByID(room_id);
+        if (room.isEmpty()) {
+            throw new IllegalArgumentException("Room not found. Please try again.");
+        }
+
+        Optional<Property> property = property_room_repo.findPropertyByRoomID(room_id);
+        if (property.isEmpty()) {
+            throw new IllegalArgumentException("Property for the selected room not found. Please try again.");
+        }
+
+        if (!room.get().isActive() || !property.get().isActive()) {
+            throw new IllegalArgumentException("Selected room or its property is not active. Cannot proceed with booking.");
+        }
+        // Check that booking dates are within room availability and that start date is before end date and that end date is after start date
+        System.out.println("Enter booking srart date (YYYY-MM-DD): "); 
+        String start_date_input = scanner.nextLine().trim();
+
+        LocalDate start_date = LocalDate.parse(start_date_input);
+        System.out.println("Enter booking end date (YYYY-MM-DD): ");
+        String end_date_input = scanner.nextLine().trim();
+        LocalDate end_date = LocalDate.parse(end_date_input);
+        Validate.validateDateOrder(start_date, end_date, "Start Date", "End Date");
+
+        if (start_date.isBefore(room.get().getAvailableFrom())|| end_date.isAfter(room.get().getAvailableTo())) {
+            throw new IllegalArgumentException("Booking dates must be within the room's available dates: " + room.get().getAvailableFrom() + " to " + room.get().getAvailableTo());
+        }
+
+        // check overlap against approved bookings for the same room
+        for (Booking existing_booking : booking_repo.listBookinigsByRoomID(room_id)) {
+            if (existing_booking.getBookingStatus() == BookingStatus.APPROVED) {
+                if (overlaps(start_date, end_date, existing_booking.getBookingStartDate(), existing_booking.getBookingEndDate())) {
+                    throw new IllegalArgumentException("Booking dates overlap with an existing approved booking from " + existing_booking.getBookingStartDate() + " to " + existing_booking.getBookingEndDate());
+                }
+            }
+        }
+
+        Instant expiry = Instant.now().plus(Duration.ofHours(24)); //Booking request expires in 24 hours if not approved/rejected by homeowner
+
+        Booking booking = new Booking(
+            IDManage.generateBookingID(),
+            room_id,
+            student.getId(),
+            property.get().getPropertyId(),
+            property.get().getHomeownerID(),
+            start_date,
+            end_date,
+            expiry
+        );
+
+        booking_repo.saveBooking(booking);
+
+        System.out.println("Booking request created successfully with ID: " + booking.getBookingID());
+        System.out.println("Status: " + booking.getBookingStatus());
+        System.out.println("Press Enter to continue...");
+        scanner.nextLine();
+    }
+
+    private void viewBookingHistory( User currentUser) {
+        System.out.println("\n---- My Booking History ----");
+
+        List<Booking> bookings;
+
+        if (currentUser instanceof Student) {
+            bookings = booking_repo.findBookingByStudent(currentUser.getId());
+        } else if (currentUser instanceof Homeowner) {
+            bookings = booking_repo.findBookingByHomeowner(currentUser.getId());
+        } else {
+            System.out.println("(Admins do not have booking history)");
+            System.out.println("Press Enter to continue...");
+            scanner.nextLine();
+            return;
+        }
+
+        bookings.sort(Comparator.comparing(Booking::getBookingStartDate));
+
+        if (bookings.isEmpty()) {
+            System.out.println("(No bookings)");
+        } 
+        else {
+            for (Booking b : bookings) {
+                System.out.println("Booking ID: " + b.getBookingID()
+                        + "\n    Property: " + b.getPropertyID()
+                        + "\n    Room: " + b.getRoomID()
+                        + "\n    Student: " + b.getStudentID()
+                        + "\n    Start Date: " + b.getBookingStartDate() + " to " + b.getBookingEndDate()
+                        + "\n    Status: " + b.getBookingStatus());
+            }
+        }
+
+        System.out.println("Press Enter to continue...");
+        scanner.nextLine();
+        }
+
+    private void cancelBookingMenu(User user) {
+        System.out.println("\n---- Cancel Booking ----");
+
+        System.out.print("Enter Booking ID: ");
+        String bookingID = scanner.nextLine().trim();
+        Validate.notBlank(bookingID, "Booking ID");
+
+        Booking booking = booking_repo.findBookingByID(bookingID)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+
+        // Only the booking's student OR homeowner can cancel
+        boolean isStudentParty = booking.getStudentID().equals(user.getId());
+        boolean isHomeownerParty = booking.getHomeownerID().equals(user.getId());
+
+        if (!isStudentParty && !isHomeownerParty) {
+            throw new IllegalArgumentException("You are not allowed to cancel this booking.");
+        }
+
+        // Only pending or approved can be cancelled (your rule)
+        if (booking.getBookingStatus() != BookingStatus.PENDING &&
+            booking.getBookingStatus() != BookingStatus.APPROVED) {
+            throw new IllegalArgumentException("Only PENDING or APPROVED bookings can be cancelled.");
+        }
+
+        booking.setBookingStatus(BookingStatus.CANCELLED);
+        System.out.println("Booking cancelled.");
+
+        System.out.println("Press Enter to continue...");
+        scanner.nextLine();
+    }
+    
+    private void approveDeclineBookingMenu(User homeowner) {
+        System.out.println("\n---- Approve / Decline Booking ----");
+
+        System.out.print("Enter Booking ID: ");
+        String bookingID = scanner.nextLine().trim();
+        Validate.notBlank(bookingID, "Booking ID");
+
+        Booking booking = booking_repo.findBookingByID(bookingID)
+                .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+
+        if (!booking.getHomeownerID().equals(homeowner.getId())) {
+            throw new IllegalArgumentException("You do not own this booking request.");
+        }
+
+        if (booking.getBookingStatus() != BookingStatus.PENDING) {
+            throw new IllegalArgumentException("Only PENDING bookings can be approved/declined.");
+        }
+
+        System.out.println("1) Approve");
+        System.out.println("2) Decline");
+        String choice = scanner.nextLine().trim();
+
+        if (choice.equals("1")) {
+            // Re-check overlap against existing APPROVED bookings before approving
+            for (Booking b : booking_repo.listBookinigsByRoomID(booking.getRoomID())) {
+                if (b.getBookingStatus() == BookingStatus.APPROVED) {
+                    if (overlaps(booking.getBookingStartDate(), booking.getBookingEndDate(),
+                                b.getBookingStartDate(), b.getBookingEndDate())) {
+                        throw new IllegalArgumentException("Cannot approve: overlaps an approved booking.");
+                    }
+                }
+            }
+
+            booking.setBookingStatus(BookingStatus.APPROVED);
+            System.out.println("Booking approved.");
+
+        } else if (choice.equals("2")) {
+            booking.setBookingStatus(BookingStatus.DECLINED);
+            System.out.println("Booking declined.");
+        } else {
+            System.out.println("Invalid choice.");
+        }
+
+        System.out.println("Press Enter to continue...");
+        scanner.nextLine();
+    }
+
+    private boolean overlaps(LocalDate start1, LocalDate end1, LocalDate start2, LocalDate end2) {
+        return start1.isBefore(end2) && start2.isBefore(end1);
     }
 
 }

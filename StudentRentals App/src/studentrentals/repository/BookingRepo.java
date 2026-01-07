@@ -61,6 +61,17 @@ public class BookingRepo {
         return bookings;
     }
 
+    public List<Booking> listBookinigsByRoomID (String roomID) {
+        if (roomID == null) {
+            return Collections.emptyList();
+        }
 
-
+        List<Booking> bookings = new ArrayList<>();
+        for (Booking booking : booking_by_ID.values()) {
+            if (roomID.equals(booking.getRoomID())) {
+                bookings.add(booking);
+            }
+        }
+        return bookings;
+    }
 }

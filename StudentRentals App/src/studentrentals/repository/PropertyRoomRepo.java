@@ -5,6 +5,7 @@ import studentrentals.domain.Room;
 import studentrentals.domain.RoomSearch;
 import studentrentals.util.IndexUtil;
 
+import java.lang.classfile.ClassFile.Option;
 import java.util.*;
 
 
@@ -35,6 +36,15 @@ public class PropertyRoomRepo {
             }
         }
         return properties;
+    }
+
+    public Optional<Property> findPropertyByRoomID (String roomID) {
+        Room room = room_by_ID.get(roomID);
+        if (room == null) {
+            return Optional.empty();
+        }
+        Property property = property_by_ID.get(room.getPropertyID());
+        return Optional.ofNullable(property);
     }
 
     public Collection<Property> getAllProperties() {
