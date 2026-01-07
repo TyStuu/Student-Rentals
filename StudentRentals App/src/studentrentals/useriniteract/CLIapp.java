@@ -152,6 +152,7 @@ public final class CLIapp {
         System.out.println("3) Create a Property listing.");
         System.out.println("4) Add a Room to a Property.");
         System.out.println("5) View Dashboard.");
+        System.out.println("0) Logout. ");
         String choice = scanner.nextLine().trim();
 
         try {
@@ -194,7 +195,8 @@ public final class CLIapp {
 
         System.out.println("1) View user profile.");
         System.out.println("2) Edit user profile.");
-        //search booking reviews
+        System.out.println("3) Search Rooms.");
+        // booking reviews
         System.out.println("0) Logout. ");
 
         String choice = scanner.nextLine().trim();
@@ -207,6 +209,8 @@ public final class CLIapp {
                 case "2":
                     editProfile(student);
                     break;
+                case "3":
+                    //searchRoomsMenu
                 case "0":
                     System.out.println("Logging out.");
                     session.logoutClearCurrentUser();
@@ -304,6 +308,12 @@ public final class CLIapp {
         }
 
         Property selected_property = selected_property_opttional.get();
+        if (!selected_property.getHomeownerID().equals(homeowner.getId())) { //Make sure homeowner actually owns property to add room to.
+            System.out.println("You do not own this property.");
+            System.out.println("Press Enter to continue...");
+            scanner.nextLine();
+            return;
+        }
 
         System.out.println("Enter Room Type (Single, Double, Ensuite): ");
         System.out.println("Room Type: ");
@@ -401,4 +411,55 @@ public final class CLIapp {
         }
         System.out.println("Profile updated successfully.");
     }
+
+// Search functions
+    private void studentSearchRoomsMenu(Student student) {
+        System.out.println("\n ---- Search Rooms ----");
+        
+        
+        System.out.println("Enter Keyword to seach for (address / description) or leave blank to view all results: ");
+        String keyword = scanner.nextLine().trim();
+
+        //Base linear search
+        List<RoomSearch> results = property_room_repo.linearRoomSearch(keyword);
+        if (results.isEmpty()) {
+            System.out.println("No rooms found matching your criteria.");
+            System.out.println("Press Enter to continue...");
+            scanner.nextLine();
+            return;
+        }
+
+        //Apply filters
+        results = applySearchFilters(results);
+        if (results.isEmpty()) {
+            System.out.println("No rooms found matching your criteria after applying filters.");
+            System.out.println("Press Enter to continue...");
+            scanner.nextLine();
+            return;
+        }
+
+        //sort results
+        sortSearchResults(results);
+
+        results = applyTopN(results);
+
+        displaySearchResults(results);
+
+        System.out.println("Press Enter to continue...");
+        scanner.nextLine();
+    }
+
+    private List<RoomSearch> applySearchFilters(List<RoomSearch> rooms) {
+    }
+
+    private void sortSearchResults(List<RoomSearch> rooms) {
+    }
+
+    private List<RoomSearch> applyTopN(List<RoomSearch> rooms) {
+    }
+
+    private void displaySearchResults(List<RoomSearch> rooms) {
+    }
+
 }
+

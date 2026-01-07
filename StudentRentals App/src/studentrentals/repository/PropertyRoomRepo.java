@@ -2,6 +2,7 @@ package studentrentals.repository;
 
 import studentrentals.domain.Property;
 import studentrentals.domain.Room;
+import studentrentals.domain.RoomSearch;
 import studentrentals.util.IndexUtil;
 
 import java.util.*;
@@ -9,13 +10,13 @@ import java.util.*;
 
 public class PropertyRoomRepo {
 
-    // In-memory storage of properties and rooms
+// In-memory storage of properties and rooms
     private final Map<String, Property> property_by_ID = new HashMap<>();
     private final Map<String, Room> room_by_ID = new HashMap<>();
     private final Map<String, List<String>> property_ID_by_owner = new HashMap<>();
 
 
-    // Methods for Property
+// Methods for Property
     public Optional<Property> findPropertyByID(String id) {
         Optional<Property> property = Optional.ofNullable(property_by_ID.get(id));
         return property;
@@ -52,7 +53,7 @@ public class PropertyRoomRepo {
     }
 
 
-    // Methods for Rooms
+// Methods for Rooms
     public Optional<Room> findRoomByID(String id) {
         Optional<Room> room = Optional.ofNullable(room_by_ID.get(id));
         return room;
@@ -75,6 +76,55 @@ public class PropertyRoomRepo {
             throw new IllegalArgumentException("Room with given ID already exists");
         }
         room_by_ID.put(room.getRoomID(), room);
+    }
+
+    public List<RoomSearch> getAllActiveRooms() {
+        List<RoomSearch> active_rooms = new ArrayList<>();
+        
+        for (Property property : property_by_ID.values()){
+            if (property.isActive()){
+                for (Room room : property.getRooms()){
+                    if (room.isActive()){
+                        RoomSearch room_search = new RoomSearch(property, room);
+                        active_rooms.add(room_search);
+                    }
+                }
+            }
+        }
+        return active_rooms;
+    }
+
+    public List<RoomSearch> linearRoomSearch(String keyword) { // Simple linear search that checks all properties and their rooms foor any mathces
+        String k;
+
+        if (keyword != null) {
+            k = keyword.trim().toLowerCase();
+        } else {
+            k = "";
+        }
+
+        List<RoomSearch> matching_rooms = new ArrayList<>();
+
+        for (Property property : property_by_ID.values()) {
+            String address = property.getAddress().toLowerCase();
+            String description = property.getDescription().toLowerCase();
+            boolean matches;
+
+            if (k.isEmpty()){
+                matches = true; //if keyword was blank, match all
+            } else {
+                matches = address.contains(k) || description.contains(k);
+            }
+
+            if (matches && property.isActive()){
+                for (Room room : property.getRooms()){
+                    if (room.isActive()){
+                        matching_rooms.add(new RoomSearch(property, room));
+                    }
+                }
+            }
+        }
+        return matching_rooms;
     }
 
 
