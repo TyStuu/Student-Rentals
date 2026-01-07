@@ -45,33 +45,32 @@ public final class CLIapp {
 
     private void authenticationMenu() {
         System.out.println("Welcome to the Student Rentals Management App");
-            System.out.println("1) Login");
-            System.out.println("2) Register");
-            System.out.println("0) Exit");
-            String choice = scanner.nextLine().trim();
+        System.out.println("1) Login");
+        System.out.println("2) Register");
+        System.out.println("0) Exit");
+        String choice = scanner.nextLine().trim();
 
-            try{
-                switch (choice) {
-                    case "1" :
-                        loginMenu();
-                        break;
-                    case "2":
-                        registerMenu();
-                        break;
-                    case "0":
-                        System.out.println("Exiting the application.");
-                        return;
-                    default:
-                        System.out.println("Invalid choice. Please try again.");
-                }
+        try{
+            switch (choice) {
+                case "1" :
+                    loginMenu();
+                    break;
+                case "2":
+                    registerMenu();
+                    break;
+                case "0":
+                    System.out.println("Exiting the application.");
+                    return;
+                default:
+                    System.out.println("Invalid choice. Please try again.");
             }
-            catch (Exception e){
-                System.out.println("Error: " + e.getMessage());
-            }
+        }
+        catch (Exception e){
+            System.out.println("Error: " + e.getMessage());
+        }
     }
 
 // Login and Registration
-
     private void loginMenu() {
         System.out.println("Please log in to continue.");
         System.out.print("Email: ");
@@ -168,10 +167,10 @@ public final class CLIapp {
                     createPropertyMenu(homeowner);
                     break;
                 case "4":
-                    //add room
+                    addRoomMenu(homeowner);
                     break;
                 case "5":
-                    //view dashboard
+                    dashboardMenu(homeowner);
                     break;  
 
                 case "0":
@@ -248,7 +247,7 @@ public final class CLIapp {
         }
     }
 
-//Properrty/Room/Booking Management Menus
+//Homeowner Functions (Create Property, Add Room and Dashboard)
     private void createPropertyMenu(User homeowner) {
         System.out.println("\n ---- Create Property ----");
         System.out.println("Enter property address (address also used as title):");
@@ -292,9 +291,9 @@ public final class CLIapp {
         for (int i = 0; i < properties.size(); i++){ //List all propertiues owned by homeowner
             System.out.println("   " + (i +1) + ") "+ properties.get(i).getAddress()+ " (ID: "+ properties.get(i).getPropertyId()+ ")");
         }
-        System.out.println("Choice: ");
+        System.out.println("Enter your choicie (Property ID): ");
         String choice = scanner.nextLine().trim();
-        Validate.notBlank(choice, "Enter valid property ID");
+        Validate.notBlank(choice, "Property ID");
 
         Optional<Property> selected_property_opttional = property_room_repo.findPropertyByID(choice);
         if (selected_property_opttional.isEmpty()) {
@@ -306,7 +305,7 @@ public final class CLIapp {
 
         Property selected_property = selected_property_opttional.get();
 
-        System.out.println("Enter Room Type (e.g., SINGLE, DOUBLE, STUDIO): ");
+        System.out.println("Enter Room Type (Single, Double, Ensuite): ");
         System.out.println("Room Type: ");
         String room_type_input = scanner.nextLine().trim();
         RoomType room_type = RoomType.valueOf(room_type_input);
@@ -344,7 +343,35 @@ public final class CLIapp {
         scanner.nextLine();
     }
 
+    private void dashboardMenu(User homeowner){
+        System.out.println("\n ---- Homeowner Dashboard ----");
+        
+        List<Property> properties = property_room_repo.findPropertyByOwnerID(homeowner.getId());
+        if (properties.isEmpty()) {
+            System.out.println("No properties found. Please create a property first.");
+            System.out.println("Press Enter to continue...");
+            scanner.nextLine();
+            return;
+        }
 
+        System.out.println("Your Properties:");
+        for (Property property : properties){
+            System.out.println(" - " + property.getAddress() + " (ID: "+ property.getPropertyId()+ ")");
+            System.out.println("Active?: " + property.isActive());
+            System.out.println("Rooms:");
+            if (property.getRooms().isEmpty()){
+                System.out.println("No rooms added in " + property.getAddress()+ "yet.");
+            }
+            else {
+                for (Room room : property.getRooms()){
+                    System.out.println("   - " + room.getRoomID()+ "\n     Type: " + room.getRoomType()+ "\n     Rent: " + room.getMonthlyRent()+ 
+                    "\n     Availibility: " + room.getAvailableFrom() + " to " + room.getAvailableTo() + "\n     Active?: " + room.isActive());
+                }
+            }
+        }
+        System.out.println("Press Enter to continue...");
+        scanner.nextLine();
+    }
 
 // Menus for all user types.
     private void viewProfile(User user) {
