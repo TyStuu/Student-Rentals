@@ -16,6 +16,7 @@ public class Room {
     private LocalDate available_from;
     private LocalDate available_to;
     private boolean is_active;
+    private java.time.Instant created_at = java.time.Instant.now();
 
     // Constructor
     public Room(String room_ID, String property_ID, RoomType room_type, double monthly_rent, List<String> room_amenities, LocalDate available_from, LocalDate available_to) {
@@ -25,7 +26,7 @@ public class Room {
         Objects.requireNonNull(room_type, "Room Type cannot be null");
         Objects.requireNonNull(available_from, "Available From date cannot be null");
         Objects.requireNonNull(available_to, "Available To date cannot be null");
-        
+        Validate.validateDateOrder(available_from, available_to, "Available From", "Available To");
         this.room_ID = room_ID;
         this.property_ID = property_ID;
         this.room_type = room_type;
@@ -60,6 +61,9 @@ public class Room {
     }
     public boolean isActive() {
         return is_active;
+    }
+    public java.time.Instant getCreatedAt() {
+        return created_at;
     }
 
     // Setters / Updaters

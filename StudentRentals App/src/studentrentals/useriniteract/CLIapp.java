@@ -10,6 +10,7 @@ import java.util.Scanner;
 import java.util.jar.Attributes.Name;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Optional;
 import java.time.LocalDate;
 
@@ -24,7 +25,7 @@ public final class CLIapp {
     private final Authentication auth;
 
     private final Scanner scanner = new Scanner(System.in);
-    private final Session session = new Session();
+    private final Session session =new Session();
 
     public CLIapp(UserRepo user_repo, PropertyRoomRepo property_room_repo, BookingRepo booking_repo, Authentication auth) {
         this.user_repo = user_repo;
@@ -210,7 +211,8 @@ public final class CLIapp {
                     editProfile(student);
                     break;
                 case "3":
-                    //searchRoomsMenu
+                    studentSearchRoomsMenu((Student) student);
+                    break;
                 case "0":
                     System.out.println("Logging out.");
                     session.logoutClearCurrentUser();
@@ -310,7 +312,7 @@ public final class CLIapp {
         Property selected_property = selected_property_opttional.get();
         if (!selected_property.getHomeownerID().equals(homeowner.getId())) { //Make sure homeowner actually owns property to add room to.
             System.out.println("You do not own this property.");
-            System.out.println("Press Enter to continue...");
+            System.out.println("Press Enter to continue..");
             scanner.nextLine();
             return;
         }
@@ -417,7 +419,7 @@ public final class CLIapp {
         System.out.println("\n ---- Search Rooms ----");
         
         
-        System.out.println("Enter Keyword to seach for (address / description) or leave blank to view all results: ");
+        System.out.println("Enter Keyword to seach for (address / description) or leave blank to view all results:");
         String keyword = scanner.nextLine().trim();
 
         //Base linear search
@@ -450,15 +452,156 @@ public final class CLIapp {
     }
 
     private List<RoomSearch> applySearchFilters(List<RoomSearch> rooms) {
+        System.out.println("Apply Filters? (Yes/No): ");
+        String yes_no = scanner.nextLine().trim().toLowerCase();
+        if (!yes_no.equals("yes")) {
+            return rooms; //No filters applied
+        }
+
+        System.out.println("Minimum Rent (blank = none): "); //Get min rent filter
+        String min_rent_input = scanner.nextLine().trim();
+        Double min_rent = null;
+        if (!min_rent_input.isEmpty()) {
+            min_rent = Double.parseDouble(min_rent_input);
+            Validate.positiveDecimal(min_rent, "Minimum Rent");
+        }
+
+        System.out.println("Maximum Rent (blank = none): "); //Get max rent filter
+        String max_rent_input = scanner.nextLine().trim();
+        Double max_rent = null;
+        if (!max_rent_input.isEmpty()) {
+            max_rent = Double.parseDouble(max_rent_input);
+            Validate.positiveDecimal(max_rent, "Maximum Rent");
+        }
+
+        System.out.println("Room Type (Single, Double, Ensuite) (blank = none): "); //  Get room type filter
+        String room_type_input = scanner.nextLine().trim();
+        RoomType room_type = null;
+        if (!room_type_input.isEmpty()) {
+            room_type = RoomType.valueOf(room_type_input);
+        }
+
+        System.out.println("Filter by availability dates? (Yes/No): "); //Get availability date filter
+        String date_filter_input = scanner.nextLine().trim().toLowerCase();
+        LocalDate available_from = null;
+        LocalDate available_to = null;
+        if (date_filter_input.equals("yes")) {
+            System.out.println("Available From date (YYYY-MM-DD): ");
+            String from_date_input = scanner.nextLine().trim();
+            available_from = LocalDate.parse(from_date_input);
+
+            System.out.println("Available To date (YYYY-MM-DD): ");
+            String to_date_input = scanner.nextLine().trim();
+            available_to = LocalDate.parse(to_date_input);
+
+            Validate.validateDateOrder(available_from, available_to, "Available From", "Available To");
+        }
+
+        //Apply above filtes
+        List<RoomSearch> filtered_rooms = new ArrayList<>();
+        for (RoomSearch room_search : rooms) {
+            Room room = room_search.getRoom();
+            boolean matches = true;
+
+            if (min_rent !=null && room.getMonthlyRent() < min_rent) {
+                matches = false;
+            }
+            if (max_rent !=null && room.getMonthlyRent() > max_rent){
+                matches = false;
+            }
+            if (room_type !=null && room.getRoomType() !=room_type){
+                matches = false;
+            }
+            if (available_from !=null && available_to !=null) {
+                if (room.getAvailableFrom().isAfter(available_from) || room.getAvailableTo().isBefore(available_to)){
+                    matches =false;
+                }
+            }
+
+            if (matches) { //Room meets all criteria
+                filtered_rooms.add(room_search);
+            }
+        }
+
+        return filtered_rooms;
     }
 
     private void sortSearchResults(List<RoomSearch> rooms) {
+        System.out.println("\nSort by:");
+
+        System.out.println("1) Price: Low to High");
+        System.out.println("2) Price: High to Low");
+        System.out.println("3) Address: A to Z");
+        System.out.println("4) Address: Z to A");
+        System.out.println("5) Listing Date: Newest to Oldest");
+        System.out.println("6) Listing Date: Oldest to Newest");
+        String choice = scanner.nextLine().trim();
+
+        Comparator<RoomSearch> comparator;
+
+        switch (choice) {
+            case "1":
+                comparator = Comparator.comparingDouble(rs-> rs.getRoom().getMonthlyRent());
+                break;
+
+            case "2":
+                comparator = Comparator.comparingDouble((RoomSearch rs)-> rs.getRoom().getMonthlyRent()).reversed();
+                break;
+            case "3":
+                comparator = Comparator.comparing(rs ->rs.getProperty().getAddress().toLowerCase());
+                break;
+            case "4":
+                comparator = Comparator.comparing((RoomSearch rs)-> rs.getProperty().getAddress().toLowerCase()).reversed();
+                break;
+            case "5":
+                comparator = Comparator.comparing((RoomSearch rs) ->rs.getRoom().getCreatedAt()).reversed();
+                break;
+            case "6":
+                comparator = Comparator.comparing(rs ->rs.getRoom().getCreatedAt());
+                break;
+
+            default:
+                System.out.println("Invalid choice. No sorting applied.");
+                return;
+        }
+
+        Comparator<RoomSearch> finalComparator = comparator.thenComparing(rs-> rs.getRoom().getRoomID()); //final tiebreaker case of exact matches are sorted by room id
+        rooms.sort(finalComparator);
     }
 
     private List<RoomSearch> applyTopN(List<RoomSearch> rooms) {
+        System.out.println("Limit amount of results? (Yes/No): ");
+        String yes_no = scanner.nextLine().trim().toLowerCase();
+        if (!yes_no.equals("yes")) {
+            return rooms;
+        }
+
+        System.out.println("Enter number of results to show:");
+        int n = Integer.parseInt(scanner.nextLine().trim());
+        if (n <=0 || n > rooms.size()) {
+            System.out.println("Invalid number of results. Showing all results.");
+            return rooms;
+        }
+        return rooms.subList(0, n);
     }
 
     private void displaySearchResults(List<RoomSearch> rooms) {
+        System.out.println("\n ---- Search Results ----");
+        
+        for (RoomSearch room_search : rooms){
+            Property property =  room_search.getProperty();
+            Room room  = room_search.getRoom();
+
+            System.out.println("Property ID: " +property.getPropertyId());
+            System.out.println("Address: " + property.getAddress());
+            System.out.println("Description: " +property.getDescription());
+            System.out.println("Room ID: " +room.getRoomID());
+            System.out.println("Room Type: " +room.getRoomType());
+            System.out.println("Monthly Rent: "+ room.getMonthlyRent());
+            System.out.println("Available From: "+ room.getAvailableFrom());
+            System.out.println("Available To: "+ room.getAvailableTo());
+            System.out.println("----------------------");
+        }
     }
 
 }
