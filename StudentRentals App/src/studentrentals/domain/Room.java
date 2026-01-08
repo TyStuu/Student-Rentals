@@ -74,11 +74,16 @@ public class Room {
     public void setRoomAmenities(List<String> room_amenities) { //Allow changes for adding/removing amenities
         this.room_amenities = room_amenities;
     }
-    public void setAvailableFrom(LocalDate available_from) { //Allow changes for availability adjustments
+    public void setAvailablity(LocalDate available_from, LocalDate available_to) {
+        Objects.requireNonNull(available_from, "Available From date cannot be null");
+        Objects.requireNonNull(available_to, "Available To date cannot be null");
+        Validate.validateDateOrder(available_from, available_to, "Available From", "Available To");
         this.available_from = available_from;
-    }
-    public void setAvailableTo(LocalDate available_to) { //^^
         this.available_to = available_to;
+    }
+    public void setRoomType(RoomType room_type) {
+        Objects.requireNonNull(room_type, "Room Type cannot be null");
+        this.room_type = room_type;
     }
     public boolean isAvailable(LocalDate beginning, LocalDate end) {
         return (beginning.isEqual(available_from) || beginning.isAfter(available_from)) &&

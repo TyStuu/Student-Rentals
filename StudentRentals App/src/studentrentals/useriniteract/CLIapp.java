@@ -7,7 +7,6 @@ import studentrentals.repository.*;
 import studentrentals.util.IDManage;
 import studentrentals.util.IndexUtil;
 import java.util.Scanner;
-import java.util.jar.Attributes.Name;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -158,7 +157,6 @@ public final class CLIapp {
         System.out.println("5) View Dashboard.");
         System.out.println("6) View my bookings");
         System.out.println("7) Cancel a booking.");
-        System.out.println( "8) Approve / Decline a booking request.");
         System.out.println("0) Logout. ");
         String choice = scanner.nextLine().trim();
 
@@ -185,9 +183,6 @@ public final class CLIapp {
                     break;
                 case "7":
                     cancelBookingMenu(homeowner);
-                    break;
-                case "8":
-                    approveDeclineBookingMenu(homeowner);
                     break;
 
 
@@ -216,6 +211,7 @@ public final class CLIapp {
         System.out.println("4) Create a booking request.");
         System.out.println("5) View my bookings.");
         System.out.println("6) Cancel a booking.");
+        System.out.println("7) Leave a review.");
         // booking reviews
         System.out.println("0) Logout. ");
 
@@ -241,6 +237,9 @@ public final class CLIapp {
                 case "6":
                     cancelBookingMenu((Student) student);
                     break;
+                case "7":
+                    leaveReviewMenu((Student) student);
+                    break;
                 case "0":
                     System.out.println("Logging out.");
                     session.logoutClearCurrentUser();
@@ -260,13 +259,20 @@ public final class CLIapp {
 
         System.out.println("Welcome, " + admin.getName() + " (Admin)");
 
-        // Admin view data, deativate users, deactivate rooms/properties
+        System.out.println("1) List data type (Users, Properties, Rooms, Bookings).");
+        System.out.println("2) Delete data type (User, Property, Room, Booking).");
         System.out.println("0) Logout. ");
 
         String choice = scanner.nextLine().trim();
 
         try { 
             switch (choice) {
+                case "1":
+                    adminListDataMenu((Admin) admin);
+                    break;
+                case "2":
+                    adminDeleteDataMenu((Admin) admin);
+                    break;
                 case "0":
                     System.out.println("Logging out.");
                     session.logoutClearCurrentUser();
@@ -409,8 +415,50 @@ public final class CLIapp {
                 }
             }
         }
-        System.out.println("Press Enter to continue...");
-        scanner.nextLine();
+
+        System.out.println("Would you like to activate/deactivate any of your properties / rooms? (Yes/No): ");
+        String choice = scanner.nextLine().trim().toLowerCase();
+        if (choice.equals("yes")) {
+            activateDeactivateMenu(homeowner);
+        }
+        else {
+            System.out.println("Returning to menu.");
+            return;
+        }
+    }
+
+    private void activateDeactivateMenu(User homeowner) {
+        System.out.println("\n ---- Activate / Deactivate Menu ----");
+
+        List<Property> properties = property_room_repo.findPropertyByOwnerID(homeowner.getId());
+        if (properties.isEmpty()) {
+            System.out.println("No properties found. Please create a property first.");
+            System.out.println("Press Enter to continue...");
+            scanner.nextLine();
+            return;
+        }
+
+        System.out.println("Your Properties:");
+        for (int i = 0; i < properties.size(); i++){
+            Property property = properties.get(i);
+            System.out.println((i + 1) + ") " + property.getAddress() + " (ID: "+ property.getPropertyId()+ ") - Active?: " + property.isActive());
+        }
+        System.out.println("Enter the number of the property you wish to activate/deactivate: ");
+        String choice_input = scanner.nextLine().trim();
+        int choice = Integer.parseInt(choice_input);
+        if (choice < 1 || choice > properties.size()) {
+            System.out.println("Invalid choice.");
+            return;
+        }
+
+        Property selected_property = properties.get(choice - 1);
+        if (selected_property.isActive()) {
+            selected_property.deactivate();
+            System.out.println("Property deactivated.");
+        } else {
+            selected_property.activate();
+            System.out.println("Property activated.");
+        }
     }
 
 // Menus for all user types.
@@ -622,6 +670,7 @@ public final class CLIapp {
             System.out.println("Monthly Rent: "+ room.getMonthlyRent());
             System.out.println("Available From: "+ room.getAvailableFrom());
             System.out.println("Available To: "+ room.getAvailableTo());
+            System.out.println("Average Rating: " + property.getAverageRating());
             System.out.println("----------------------");
         }
     }
@@ -722,6 +771,17 @@ public final class CLIapp {
             }
         }
 
+        if (currentUser instanceof Homeowner){
+            System.out.println("Would you like to aprrove/decline any pending bookings? (Yes/No): ");
+            String choice = scanner.nextLine().trim().toLowerCase();
+            if (choice.equals("yes")) {
+                approveDeclineBookingMenu(currentUser);
+            }
+            else {
+                System.out.println("Returning to menu.");
+                return;
+            }
+        }
         System.out.println("Press Enter to continue...");
         scanner.nextLine();
         }
@@ -803,6 +863,146 @@ public final class CLIapp {
         System.out.println("Press Enter to continue...");
         scanner.nextLine();
     }
+
+// review functions 
+private void leaveReviewMenu(Student student) {
+    System.out.println("\n---- Leave a Review ----");
+
+    System.out.print("Enter Booking ID: ");
+    String bookingID = scanner.nextLine().trim();
+    Validate.notBlank(bookingID, "Booking ID");
+
+    Booking booking = booking_repo.findBookingByID(bookingID)
+            .orElseThrow(() -> new IllegalArgumentException("Booking not found"));
+
+    // must be the student who made it
+    if (!booking.getStudentID().equals(student.getId())) {
+        throw new IllegalArgumentException("You can only review your own bookings.");
+    }
+
+    // must be approved
+    if (booking.getBookingStatus() != BookingStatus.APPROVED) {
+        throw new IllegalArgumentException("Only APPROVED bookings can be reviewed.");
+    }
+
+    // must be after booking end date
+    if (!LocalDate.now().isAfter(booking.getBookingEndDate())) {
+        throw new IllegalArgumentException("You can only review after the booking end date: " + booking.getBookingEndDate());
+    }
+
+    // prevent duplicate review
+    if (booking.getReviewID() != null && !booking.getReviewID().isBlank()) {
+        throw new IllegalArgumentException("This booking has already been reviewed.");
+    }
+
+    Property property = property_room_repo.findPropertyByID(booking.getPropertyID())
+            .orElseThrow(() -> new IllegalArgumentException("Property not found"));
+
+    System.out.print("Rating (1-5): ");
+    int rating = Integer.parseInt(scanner.nextLine().trim());
+    if (rating < 1 || rating > 5) {
+        throw new IllegalArgumentException("Rating must be between 1 and 5.");
+    }
+
+    System.out.print("Optional comment (press Enter to skip): ");
+    String comment = scanner.nextLine();
+
+    Review review = new Review(
+            IDManage.generateReviewID(),
+            booking.getBookingID(),
+            student.getId(),
+            property.getPropertyId(),
+            rating,
+            comment
+    );
+
+    property.addReview(review);
+    booking.setReviewID(review.getReviewID());
+
+    System.out.println("Review submitted. Thank you!");
+    System.out.println("Press Enter to continue...");
+    scanner.nextLine();
+}
+
+//admin finctions
+    private void adminListDataMenu(Admin admin) {
+        System.out.println("\n---- List Data ----");
+        System.out.println("Select data type to list:");
+        System.out.println("1) Users");
+        System.out.println("2) Properties");
+        System.out.println("3) Rooms");
+        System.out.println("4) Bookings");
+        String choice = scanner.nextLine().trim();
+
+        switch (choice) {
+            case "1":
+                for (User user : user_repo.getAllUsers()) {
+                    System.out.println(user);
+                }
+                break;
+            case "2":
+                for (Property property : property_room_repo.getAllProperties()) {
+                    System.out.println(property);
+                }
+                break;
+            case "3":
+                for (RoomSearch room : property_room_repo.getAllActiveRooms()) {
+                    System.out.println(room);
+                }
+                break;
+            case "4":
+                for (Booking booking : booking_repo.getAllBookings()) {
+                    System.out.println(booking);
+                }
+                break;
+            default:
+                System.out.println("Invalid choice.");
+                return;
+            }
+        }
+
+    private void adminDeleteDataMenu(Admin admin) {
+        System.out.println("\n---- Delete Data ----");
+        System.out.println("Select data type to delete:");
+        System.out.println("1) User");
+        System.out.println("2) Property");
+        System.out.println("3) Room");
+        System.out.println("4) Booking");
+        String choice = scanner.nextLine().trim();
+
+        switch (choice) {
+            case "1":
+                System.out.print("Enter User ID to delete: ");
+                String userID = scanner.nextLine().trim();
+                user_repo.findUserByID(userID).get().deactivateAccount();
+                System.out.println("User deactivated.");
+                break;
+            case "2":
+                System.out.print("Enter Property ID to delete: ");
+                String propertyID = scanner.nextLine().trim();
+                property_room_repo.findPropertyByID(propertyID).get().deactivate();
+                System.out.println("Property deactivated.");
+                break;
+            case "3":
+                System.out.print("Enter Room ID to delete: ");
+                String roomID = scanner.nextLine().trim();
+                property_room_repo.findRoomByID(roomID).get().deactivate();
+                System.out.println("Room deactivated.");
+                break;
+            case "4":
+                System.out.print("Enter Booking ID to delete: ");
+                String bookingID = scanner.nextLine().trim();
+                booking_repo.findBookingByID(bookingID).get().setBookingStatus(BookingStatus.CANCELLED);
+                System.out.println("Booking cancelled.");
+                break;
+            default:
+                System.out.println("Invalid choice.");
+                return;
+        }
+    }
+
+
+
 
     private boolean overlaps(LocalDate start1, LocalDate end1, LocalDate start2, LocalDate end2) {
         return start1.isBefore(end2) && start2.isBefore(end1);

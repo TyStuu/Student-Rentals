@@ -26,13 +26,15 @@ public final class Validate {
         }
     }
 
-    public static void validateDateOrder( LocalDate startDate, LocalDate endDate, String startFieldName, String endFieldName) { // Validate that start date is before end date
-        Objects.requireNonNull(startDate, startFieldName + " cannot be null");
-        Objects.requireNonNull(endDate, endFieldName + " cannot be null");
-        if (startDate.isAfter(endDate)) {
-            throw new IllegalArgumentException(startFieldName + " must be before " + endFieldName);
+    public static void validateDateOrder(LocalDate startDate, LocalDate endDate, String startName, String endName) {
+        Objects.requireNonNull(startDate, startName + " cannot be null");
+        Objects.requireNonNull(endDate, endName + " cannot be null");
+
+        if (!startDate.isBefore(endDate)) {
+            throw new IllegalArgumentException(startName + " must be before " + endName);
         }
     }
+
 
     // Format Validators
     public static void validatePassword(String password) { // Validate that password meets minimum complexity

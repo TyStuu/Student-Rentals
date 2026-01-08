@@ -1,6 +1,7 @@
 package studentrentals.repository;
 
 import studentrentals.domain.Booking;
+import studentrentals.domain.BookingStatus;
 import studentrentals.util.IndexUtil;
 
 import java.util.*;
@@ -74,4 +75,24 @@ public class BookingRepo {
         }
         return bookings;
     }
+
+    public boolean hasApprovedBookingForRoom(String roomID) {
+        List<Booking> bookings = listBookinigsByRoomID(roomID);
+        for (Booking b : bookings) {
+            if (b.getBookingStatus() == BookingStatus.APPROVED) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean hasApprovedBookingForProperty(String propertyID) {
+        for (Booking b : getAllBookings()) { // if you have this; if not, see note below
+            if (b.getPropertyID().equals(propertyID) && b.getBookingStatus() == BookingStatus.APPROVED) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

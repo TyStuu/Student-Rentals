@@ -16,6 +16,7 @@ public class Property {
     private boolean is_active;
     private int review_count = 0;
     private int review_total = 0;
+    private List<Review> reviews = new ArrayList<>();
 
     // Constructor
     public Property(String property_id, String homeowner_ID, String address, String description, List<String> house_amenities) {
@@ -54,6 +55,9 @@ public class Property {
     public boolean isActive() {
         return is_active;
     }
+    public List<Review> getReviews() {
+        return reviews;
+    }
 
     // Setters / Updaters   
     public void setAddress(String address) { // Update address if any changes
@@ -74,22 +78,28 @@ public class Property {
     // Review Methods
     public double getAverageRating() {
         if (review_count == 0) {
-            System.out.println("No reviews yet.");
             return 0.0;
-        } 
-        else {
-            double average = (double) review_total / review_count;
-            return average;
         }
+        return (double) review_total / review_count;
     }
-    public void addReview(int rating) {
-        review_total += rating;
+
+    public void addReview(Review review) {
+        Objects.requireNonNull(review, "Review cannot be null");
+        // safety: ensure review belongs to this property
+        if (!review.getPropertyID().equals(this.property_id)) {
+            throw new IllegalArgumentException("Review does not belong to this property.");
+        }
+
+        reviews.add(review);
+        review_total += review.getRating();
         review_count += 1;
     }
 
-
     public void deactivate() {
         this.is_active = false;
+    }
+    public void activate() {
+        this.is_active = true;
     }
 }
 

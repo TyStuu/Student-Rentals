@@ -10,6 +10,7 @@ public class Booking {
     private final String student_ID;
     private final String property_ID;
     private final String homeowner_ID;
+    private String review_ID;
 
     private final LocalDate booking_start_date;
     private final LocalDate booking_end_date;
@@ -69,6 +70,9 @@ public class Booking {
     public Instant getExpiry() {
         return expiry;
     }
+    public String getReviewID() {
+        return review_ID;
+    }
 
     // Setters / Updaters
     public void setBookingStatus(BookingStatus booking_status) {
@@ -77,6 +81,10 @@ public class Booking {
     }
     public void setExpiry(Instant expiry) {
         this.expiry = expiry;
+        this.recent_update = Instant.now();
+    }
+    public void setReviewID(String review_ID) {
+        this.review_ID = review_ID;
         this.recent_update = Instant.now();
     }
 

@@ -6,6 +6,8 @@ public class IDManage {
     private static int property_count = 0;
     private static int booking_count = 0;
     private static int room_count = 0;
+    private static int review_count = 0;
+
 
     private IDManage(){}
 
@@ -24,5 +26,9 @@ public class IDManage {
     public static String generateRoomID() {
         room_count++;
         return "R" + String.format("%05d", room_count);
+    }
+    public static String generateReviewID() {
+        review_count++;
+        return "V" + String.format("%05d", review_count);
     }
 }
