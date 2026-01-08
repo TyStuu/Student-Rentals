@@ -14,7 +14,7 @@ public class Main {
         PropertyRoomRepo propertyRoomRepo = new PropertyRoomRepo();
         BookingRepo bookingRepo = new BookingRepo();
 
-        Admin admin = new Admin("SR_Admin", "Admin", "admin@studentrentals.com", Passwords.hashPassword("4Dm1NP@$$W0RD134!"));
+        Admin admin = new Admin("SR_Admin", "Admin", "admin@studentrentals.com", Passwords.hashPassword("4Dm1NP@$$W0RD134!")); // Default admin account
         userRepo.saveUser(admin);
 
         Authentication auth = new Authentication(userRepo);

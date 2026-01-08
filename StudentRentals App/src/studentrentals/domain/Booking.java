@@ -87,10 +87,4 @@ public class Booking {
         this.review_ID = review_ID;
         this.recent_update = Instant.now();
     }
-
-
-
-
-
-
 }
