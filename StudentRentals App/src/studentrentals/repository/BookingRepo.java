@@ -34,7 +34,7 @@ public class BookingRepo {
         return booking;
     }
 
-    public List<Booking> findBookingByHomeowner (String homeownerID) {
+    public List<Booking> findBookingByHomeownerID (String homeownerID) {
         return listBookingsFromIDs(booking_IDs_by_homeowner_ID.get(homeownerID));
     }
 
@@ -87,12 +87,20 @@ public class BookingRepo {
     }
 
     public boolean hasApprovedBookingForProperty(String propertyID) {
-        for (Booking b : getAllBookings()) { // if you have this; if not, see note below
+        for (Booking b : getAllBookings()) {
             if (b.getPropertyID().equals(propertyID) && b.getBookingStatus() == BookingStatus.APPROVED) {
                 return true;
             }
         }
         return false;
+    }
+
+    public BookingStatus geBookingStatus( String bookingID) {
+        Booking booking = booking_by_ID.get(bookingID);
+        if (booking == null) {
+            throw new IllegalArgumentException("Booking not found for given ID");
+        }
+        return booking.getBookingStatus();
     }
 
 }

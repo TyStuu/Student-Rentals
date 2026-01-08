@@ -53,7 +53,7 @@ public abstract class User {
         this.name = name;
     }
 
-    
+
     public void deactivateAccount() {
         this.is_active = false;
     }

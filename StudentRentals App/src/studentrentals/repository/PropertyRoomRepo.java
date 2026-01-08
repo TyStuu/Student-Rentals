@@ -103,7 +103,7 @@ public class PropertyRoomRepo {
         return active_rooms;
     }
 
-    public List<RoomSearch> linearRoomSearch(String keyword) { // Simple linear search that checks all properties and their rooms foor any mathces
+    public List<RoomSearch> linearRoomSearch(String keyword) { // linear search that checks all properties and their rooms foor any mathces
         String k;
 
         if (keyword != null) {

@@ -5,7 +5,6 @@ import studentrentals.util.Passwords;
 import studentrentals.domain.*;
 import studentrentals.repository.*;
 import studentrentals.util.IDManage;
-import studentrentals.util.IndexUtil;
 import java.util.Scanner;
 import java.util.List;
 import java.util.ArrayList;
@@ -453,6 +452,13 @@ public final class CLIapp {
 
         Property selected_property = properties.get(choice - 1);
         if (selected_property.isActive()) {
+            for (Booking booking : booking_repo.findBookingByHomeownerID(selected_property.getHomeownerID())) {
+                if (booking.getBookingStatus() == BookingStatus.APPROVED) {
+                    System.out.println("Cannot deactivate property with active bookings.");
+                    return;
+                }
+            }
+
             selected_property.deactivate();
             System.out.println("Property deactivated.");
         } else {
@@ -661,17 +667,15 @@ public final class CLIapp {
         for (RoomSearch room_search : rooms){
             Property property =  room_search.getProperty();
             Room room  = room_search.getRoom();
-
-            System.out.println("Property ID: " +property.getPropertyId());
-            System.out.println("Address: " + property.getAddress());
-            System.out.println("Description: " +property.getDescription());
-            System.out.println("Room ID: " +room.getRoomID());
-            System.out.println("Room Type: " +room.getRoomType());
-            System.out.println("Monthly Rent: "+ room.getMonthlyRent());
-            System.out.println("Available From: "+ room.getAvailableFrom());
-            System.out.println("Available To: "+ room.getAvailableTo());
-            System.out.println("Average Rating: " + property.getAverageRating());
-            System.out.println("----------------------");
+            if (property.isActive() && room.isActive()) {
+                System.out.println("Property ID: " + property.getPropertyId()
+                        + "\n    Address: " + property.getAddress()
+                        + "\n    Description: " + property.getDescription()
+                        + "\n    Room ID: " + room.getRoomID()
+                        + "\n    Room Type: " + room.getRoomType()
+                        + "\n    Monthly Rent: " + room.getMonthlyRent()
+                        + "\n    Available From: " + room.getAvailableFrom() + " to " + room.getAvailableTo());
+            }
         }
     }
 
@@ -747,7 +751,7 @@ public final class CLIapp {
         if (currentUser instanceof Student) {
             bookings = booking_repo.findBookingByStudent(currentUser.getId());
         } else if (currentUser instanceof Homeowner) {
-            bookings = booking_repo.findBookingByHomeowner(currentUser.getId());
+            bookings = booking_repo.findBookingByHomeownerID(currentUser.getId());
         } else {
             System.out.println("(Admins do not have booking history)");
             System.out.println("Press Enter to continue...");
